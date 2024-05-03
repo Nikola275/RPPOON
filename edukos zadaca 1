@@ -1,0 +1,136 @@
+using System;
+using System.Collections.Generic;
+
+namespace ConsoleApp1
+{
+    public interface IBankovniRacun
+    {
+        decimal Stanje { get; }
+        void IzvrsiTransakciju(decimal iznos);
+    }
+
+    public interface ITransakcija
+    {
+        void IzvrsiTransakciju();
+    }
+
+    public abstract class Osoba
+    {
+        public string Ime { get; protected set; }
+        public string Prezime { get; protected set; }
+
+        public Osoba(string ime, string prezime)
+        {
+            Ime = ime;
+            Prezime = prezime;
+        }
+
+        public abstract void PredstaviSe();
+    }
+
+    public abstract class Transakcija : ITransakcija
+    {
+        protected decimal Iznos { get; set; }
+        protected IBankovniRacun Izvor { get; set; }
+        protected IBankovniRacun Odrediste { get; set; }
+
+        public Transakcija(IBankovniRacun izvor, IBankovniRacun odrediste, decimal iznos)
+        {
+            Izvor = izvor;
+            Odrediste = odrediste;
+            Iznos = iznos;
+        }
+
+        public abstract void IzvrsiTransakciju();
+    }
+
+    public class Korisnik : Osoba, IBankovniRacun
+    {
+        private decimal stanje;
+
+        public decimal Stanje => stanje;
+
+        public Korisnik(string ime, string prezime) : base(ime, prezime)
+        {
+            stanje = 0;
+        }
+
+        public void IzvrsiTransakciju(decimal iznos)
+        {
+            stanje += iznos;
+        }
+
+        public override void PredstaviSe()
+        {
+            Console.WriteLine($"Ja sam {Ime} {Prezime}.");
+        }
+    }
+
+    public class Banka
+    {
+        private List<IBankovniRacun> racuni;
+
+        public Banka()
+        {
+            racuni = new List<IBankovniRacun>();
+        }
+
+        public void DodajRacun(IBankovniRacun racun)
+        {
+            racuni.Add(racun);
+        }
+
+        public void IzvrsiTransakciju(ITransakcija transakcija)
+        {
+            transakcija.IzvrsiTransakciju();
+        }
+    }
+
+    public class Uplata : Transakcija
+    {
+        public Uplata(IBankovniRacun izvor, IBankovniRacun odrediste, decimal iznos) : base(izvor, odrediste, iznos)
+        {
+        }
+
+        public override void IzvrsiTransakciju()
+        {
+            Izvor.IzvrsiTransakciju(-Iznos);
+            Odrediste.IzvrsiTransakciju(Iznos);
+        }
+    }
+
+    public class Isplata : Transakcija
+    {
+        public Isplata(IBankovniRacun izvor, IBankovniRacun odrediste, decimal iznos) : base(izvor, odrediste, iznos)
+        {
+        }
+
+        public override void IzvrsiTransakciju()
+        {
+            Izvor.IzvrsiTransakciju(-Iznos);
+            Odrediste.IzvrsiTransakciju(Iznos);
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Korisnik korisnik1 = new Korisnik("Marko", "Marković");
+            Korisnik korisnik2 = new Korisnik("Ivan", "Ivanić");
+
+            Banka banka = new Banka();
+            banka.DodajRacun(korisnik1);
+            banka.DodajRacun(korisnik2);
+
+            korisnik1.IzvrsiTransakciju(100);
+            korisnik2.IzvrsiTransakciju(200);
+
+            ITransakcija uplata = new Uplata(korisnik1, korisnik2, 50);
+            banka.IzvrsiTransakciju(uplata);
+
+            Console.WriteLine($"Stanje korisnika {korisnik1.Ime}: {korisnik1.Stanje}");
+            Console.WriteLine($"Stanje korisnika {korisnik2.Ime}: {korisnik2.Stanje}");
+        }
+    }
+}
